@@ -108,7 +108,10 @@ export default function RiskAssessment() {
                 body: JSON.stringify(payload),
             });
 
-            if (!res.ok) throw new Error('Kunde inte analysera risken. Kontrollera att Ollama körs.');
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Något gick fel vid analysen. Kontrollera loggarna.');
+            }
 
             const data: CombinedResponse = await res.json();
             setResult(data);
@@ -215,8 +218,8 @@ export default function RiskAssessment() {
                             key={option}
                             onClick={() => handleAnswer(option)}
                             className={`px-8 py-4 w-full ${question.answerOptions.length === 3 ? 'md:w-32' : 'md:w-40'} min-h-[56px] rounded-xl border border-white/10 ${option === 'Ja'
-                                    ? 'bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-900/20'
-                                    : 'bg-white/5 hover:bg-white/10'
+                                ? 'bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-900/20'
+                                : 'bg-white/5 hover:bg-white/10'
                                 } text-white font-medium transition-all hover:scale-105 active:scale-95`}
                         >
                             {option}
