@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { RiskRequest, RiskResponse } from '@/lib/types';
+import { RiskRequest, CombinedResponse, RiskLevel, MaturityLevel } from '@/lib/types';
 
 export const maxDuration = 60; // Allow longer timeout for local LLM
 
@@ -15,11 +15,38 @@ export async function POST(req: Request) {
             );
         }
 
-        const answersText = answers
-            .map((a) => `- Fråga: "${a.questionText}"\n  Svar: ${a.answer}`)
-            .join('\n');
+        // Filter answers by type
+        const riskAnswers = answers.filter(a => a.type === 'risk');
+        const maturityAnswers = answers.filter(a => a.type === 'maturity');
 
-        const systemPrompt = `Du är en klassificeringsmotor för EU AI Act.
+        // Get risk classification
+        const riskLevel = await classifyRisk(riskAnswers);
+
+        // Get maturity classification
+        const maturityLevel = await classifyMaturity(maturityAnswers);
+
+        const response: CombinedResponse = {
+            riskLevel,
+            maturityLevel
+        };
+
+        return NextResponse.json(response);
+
+    } catch (error) {
+        console.error('Error in AI Risk API:', error);
+        return NextResponse.json(
+            { error: 'Internal Server Error' },
+            { status: 500 }
+        );
+    }
+}
+
+async function classifyRisk(answers: { id: string; answer: string }[]): Promise<RiskLevel> {
+    const answersText = answers
+        .map((a) => `- Fråga ID: ${a.id}\n  Svar: ${a.answer}`)
+        .join('\n');
+
+    const systemPrompt = `Du är en klassificeringsmotor för EU AI Act.
 
 Baserat på användarens svar ska du avgöra vilken risknivå som gäller enligt AI Act.
 
@@ -35,62 +62,93 @@ Regler:
 - Ingen markdown
 - Ingen extra text`;
 
-        const userPrompt = `Användarens svar:\n${answersText}`;
+    const userPrompt = `Användarens svar:\n${answersText}`;
 
-        // Combine system and user prompt effectively for Gemma
-        // Using simple concatenation for clarity in this strict instruct mode.
-        // Gemma 3 instruct format is usually <start_of_turn>user ... <end_of_turn>
-        // but the Ollama 'prompt' field works well with raw text too for simple tasks.
-        // We'll stick to the requested structure which implies a single block.
-
-        // Constructing the payload for Ollama
-        const payload = {
-            model: 'gemma3:4b',
-            prompt: `${systemPrompt}\n\n${userPrompt}`,
-            stream: false,
-            options: {
-                temperature: 0.0, // Strict deterministic output
-            }
-        };
-
-        console.log('Sending request to Ollama with payload length:', JSON.stringify(payload).length);
-
-        const ollamaResponse = await fetch('http://127.0.0.1:11434/api/generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (!ollamaResponse.ok) {
-            console.error('Ollama API error:', ollamaResponse.status, ollamaResponse.statusText);
-            return NextResponse.json(
-                { error: 'Failed to connect to AI engine' },
-                { status: 503 }
-            );
+    const payload = {
+        model: 'gemma3:4b',
+        prompt: `${systemPrompt}\n\n${userPrompt}`,
+        stream: false,
+        options: {
+            temperature: 0.0,
         }
+    };
 
-        const data = await ollamaResponse.json();
-        let riskLevel = data.response.trim();
+    console.log('Sending risk classification request to Ollama');
 
-        // Clean up response if LLM adds periods or extra whitespace
-        riskLevel = riskLevel.replace(/\.$/, '');
+    const ollamaResponse = await fetch('http://127.0.0.1:11434/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
 
-        // Validate against known levels
-        const validLevels = ["Oacceptabel risk", "Hög risk", "Begränsad risk", "Låg / minimal risk"];
-        if (!validLevels.includes(riskLevel)) {
-            console.warn('Unexpected LLM response:', riskLevel);
-            // Fallback or error handling? decided to return what we got but cleaner
-        }
-
-        const response: RiskResponse = { riskLevel: riskLevel as any };
-
-        return NextResponse.json(response);
-
-    } catch (error) {
-        console.error('Error in AI Risk API:', error);
-        return NextResponse.json(
-            { error: 'Internal Server Error' },
-            { status: 500 }
-        );
+    if (!ollamaResponse.ok) {
+        console.error('Ollama API error:', ollamaResponse.status, ollamaResponse.statusText);
+        throw new Error('Failed to connect to AI engine');
     }
+
+    const data = await ollamaResponse.json();
+    let riskLevel = data.response.trim().replace(/\.$/, '');
+
+    const validLevels: RiskLevel[] = ["Oacceptabel risk", "Hög risk", "Begränsad risk", "Låg / minimal risk"];
+    if (!validLevels.includes(riskLevel as RiskLevel)) {
+        console.warn('Unexpected risk LLM response:', riskLevel);
+    }
+
+    return riskLevel as RiskLevel;
+}
+
+async function classifyMaturity(answers: { id: string; answer: string }[]): Promise<MaturityLevel> {
+    const answersText = answers
+        .map((a) => `- Fråga ID: ${a.id}\n  Svar: ${a.answer}`)
+        .join('\n');
+
+    const systemPrompt = `Du är en klassificeringsmotor för AI Act-mognad.
+
+Baserat på användarens svar ska du avgöra vilken mognadsnivå organisationen har gällande AI Act-efterlevnad.
+
+Tillåtna svar (returnera exakt en):
+- Grundläggande
+- Utvecklad
+- Mogen
+- Avancerad
+
+Regler:
+- Svara med exakt en av nivåerna ovan
+- Inga förklaringar
+- Ingen markdown
+- Ingen extra text`;
+
+    const userPrompt = `Användarens svar:\n${answersText}`;
+
+    const payload = {
+        model: 'gemma3:4b',
+        prompt: `${systemPrompt}\n\n${userPrompt}`,
+        stream: false,
+        options: {
+            temperature: 0.0,
+        }
+    };
+
+    console.log('Sending maturity classification request to Ollama');
+
+    const ollamaResponse = await fetch('http://127.0.0.1:11434/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (!ollamaResponse.ok) {
+        console.error('Ollama API error:', ollamaResponse.status, ollamaResponse.statusText);
+        throw new Error('Failed to connect to AI engine');
+    }
+
+    const data = await ollamaResponse.json();
+    let maturityLevel = data.response.trim().replace(/\.$/, '');
+
+    const validLevels: MaturityLevel[] = ["Grundläggande", "Utvecklad", "Mogen", "Avancerad"];
+    if (!validLevels.includes(maturityLevel as MaturityLevel)) {
+        console.warn('Unexpected maturity LLM response:', maturityLevel);
+    }
+
+    return maturityLevel as MaturityLevel;
 }

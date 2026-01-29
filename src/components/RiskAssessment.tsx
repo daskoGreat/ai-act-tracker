@@ -1,31 +1,88 @@
 'use client';
 
 import { useState } from 'react';
-import { RiskRequest, RiskResponse } from '@/lib/types';
+import { RiskRequest, CombinedResponse, QuestionType } from '@/lib/types';
 
 interface Question {
     id: string;
     text: string;
+    type: QuestionType;
+    answerOptions: string[];
 }
 
 const QUESTIONS: Question[] = [
-    { id: 'q1', text: 'Avgör eller påverkar systemet människors tillgång till väsentliga tjänster, såsom utbildning, anställning, försäkringar eller hälso- och sjukvård?' },
-    { id: 'q2', text: 'Fattar systemet automatiserade beslut som har juridisk påverkan eller liknande betydelsefull inverkan på enskilda individer?' },
-    { id: 'q3', text: 'Behandlar systemet känsliga personuppgifter eller biometriska data som används för att identifiera eller kategorisera fysiska personer?' },
-    { id: 'q4', text: 'Används systemet för att övervaka, profilera eller förutsäga människors beteende, känslor eller avsikter?' },
-    { id: 'q5', text: 'Tillhör systemet något av de användningsområden som AI Act särskilt reglerar, till exempel social poängsättning, biometrisk fjärridentifiering eller kritisk infrastruktur?' },
+    {
+        id: 'q1',
+        text: 'Avgör eller påverkar systemet människors tillgång till väsentliga tjänster, såsom utbildning, anställning, försäkringar eller hälso- och sjukvård?',
+        type: 'risk',
+        answerOptions: ['Ja', 'Nej']
+    },
+    {
+        id: 'm1',
+        text: 'Finns det ett tydligt utpekat ansvar (ägare) för de AI-system som används i verksamheten?',
+        type: 'maturity',
+        answerOptions: ['Ja', 'Delvis', 'Nej']
+    },
+    {
+        id: 'q2',
+        text: 'Fattar systemet automatiserade beslut som har juridisk påverkan eller liknande betydelsefull inverkan på enskilda individer?',
+        type: 'risk',
+        answerOptions: ['Ja', 'Nej']
+    },
+    {
+        id: 'm2',
+        text: 'Har ni dokumentation som beskriver syfte, datakällor och leverantör för era AI-system?',
+        type: 'maturity',
+        answerOptions: ['Ja', 'Delvis', 'Nej']
+    },
+    {
+        id: 'q3',
+        text: 'Behandlar systemet känsliga personuppgifter eller biometriska data som används för att identifiera eller kategorisera fysiska personer?',
+        type: 'risk',
+        answerOptions: ['Ja', 'Nej']
+    },
+    {
+        id: 'm3',
+        text: 'Genomför ni någon form av risk- eller konsekvensbedömning innan ett AI-system införs eller ändras?',
+        type: 'maturity',
+        answerOptions: ['Ja', 'Delvis', 'Nej']
+    },
+    {
+        id: 'q4',
+        text: 'Används systemet för att övervaka, profilera eller förutsäga människors beteende, känslor eller avsikter?',
+        type: 'risk',
+        answerOptions: ['Ja', 'Nej']
+    },
+    {
+        id: 'm4',
+        text: 'Informerar ni användare, kunder eller medborgare om när och hur AI används i verksamheten?',
+        type: 'maturity',
+        answerOptions: ['Ja', 'Delvis', 'Nej']
+    },
+    {
+        id: 'q5',
+        text: 'Tillhör systemet något av de användningsområden som AI Act särskilt reglerar, till exempel social poängsättning, biometrisk fjärridentifiering eller kritisk infrastruktur?',
+        type: 'risk',
+        answerOptions: ['Ja', 'Nej']
+    },
+    {
+        id: 'm5',
+        text: 'Har ni rutiner för uppföljning, incidenthantering och möjlighet att pausa eller stänga av ett AI-system?',
+        type: 'maturity',
+        answerOptions: ['Ja', 'Delvis', 'Nej']
+    },
 ];
 
 export default function RiskAssessment() {
     const [currentStep, setCurrentStep] = useState(0);
-    const [answers, setAnswers] = useState<{ id: string; text: string; answer: boolean }[]>([]);
+    const [answers, setAnswers] = useState<{ id: string; type: QuestionType; answer: string }[]>([]);
     const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState<string | null>(null);
+    const [result, setResult] = useState<CombinedResponse | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    const handleAnswer = async (answer: boolean) => {
+    const handleAnswer = async (answer: string) => {
         const question = QUESTIONS[currentStep];
-        const newAnswers = [...answers, { id: question.id, text: question.text, answer }];
+        const newAnswers = [...answers, { id: question.id, type: question.type, answer }];
 
         if (currentStep < QUESTIONS.length - 1) {
             setAnswers(newAnswers);
@@ -42,11 +99,7 @@ export default function RiskAssessment() {
         setError(null);
         try {
             const payload: RiskRequest = {
-                answers: finalAnswers.map(a => ({
-                    questionId: a.id,
-                    questionText: a.text,
-                    answer: a.answer ? "Ja" : "Nej"
-                }))
+                answers: finalAnswers
             };
 
             const res = await fetch('/api/ai-risk', {
@@ -57,8 +110,8 @@ export default function RiskAssessment() {
 
             if (!res.ok) throw new Error('Kunde inte analysera risken. Kontrollera att Ollama körs.');
 
-            const data: RiskResponse = await res.json();
-            setResult(data.riskLevel);
+            const data: CombinedResponse = await res.json();
+            setResult(data);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Ett okänt fel inträffade');
         } finally {
@@ -88,13 +141,22 @@ export default function RiskAssessment() {
                 <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
                     Resultat
                 </h2>
-                <div className="p-6 md:p-8 border border-white/10 bg-white/5 rounded-2xl backdrop-blur-sm w-full">
-                    <p className="text-gray-400 mb-2 uppercase tracking-widest text-xs md:text-sm">Din AI-användning klassas som</p>
-                    <p className="text-3xl md:text-4xl font-semibold text-white mb-8">{result}</p>
+                <div className="p-6 md:p-8 border border-white/10 bg-white/5 rounded-2xl backdrop-blur-sm w-full space-y-6">
+                    <div>
+                        <p className="text-gray-400 mb-2 uppercase tracking-widest text-xs md:text-sm">Risknivå enligt AI Act</p>
+                        <p className="text-3xl md:text-4xl font-semibold text-white">{result.riskLevel}</p>
+                    </div>
+
+                    <div className="h-px bg-white/10"></div>
+
+                    <div>
+                        <p className="text-gray-400 mb-2 uppercase tracking-widest text-xs md:text-sm">AI Act-mognad</p>
+                        <p className="text-3xl md:text-4xl font-semibold text-white">{result.maturityLevel}</p>
+                    </div>
 
                     <a
                         href="mailto:david.skoglund@greatit.se?subject=Jag%20har%20gjort%20EU%20AI%20Act%20Tracker&body=Jag%20vill%20g%C3%A4rna%20ha%20mer%20information."
-                        className="inline-flex w-full md:w-auto min-h-[56px] items-center justify-center px-8 py-4 text-base font-medium text-black bg-white rounded-full hover:bg-gray-200 transition-colors duration-300 shadow-lg hover:shadow-xl"
+                        className="inline-flex w-full md:w-auto min-h-[56px] items-center justify-center px-8 py-4 text-base font-medium text-black bg-white rounded-full hover:bg-gray-200 transition-colors duration-300 shadow-lg hover:shadow-xl mt-4"
                     >
                         Kontakta oss för mer information
                     </a>
@@ -148,18 +210,18 @@ export default function RiskAssessment() {
                 </h3>
 
                 <div className="flex flex-col md:flex-row gap-4 w-full justify-center items-center">
-                    <button
-                        onClick={() => handleAnswer(false)}
-                        className="px-8 py-4 w-full md:w-40 min-h-[56px] rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white font-medium transition-all hover:scale-105 active:scale-95"
-                    >
-                        Nej
-                    </button>
-                    <button
-                        onClick={() => handleAnswer(true)}
-                        className="px-8 py-4 w-full md:w-40 min-h-[56px] rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium transition-all hover:scale-105 active:scale-95 shadow-lg shadow-blue-900/20"
-                    >
-                        Ja
-                    </button>
+                    {question.answerOptions.map((option) => (
+                        <button
+                            key={option}
+                            onClick={() => handleAnswer(option)}
+                            className={`px-8 py-4 w-full ${question.answerOptions.length === 3 ? 'md:w-32' : 'md:w-40'} min-h-[56px] rounded-xl border border-white/10 ${option === 'Ja'
+                                    ? 'bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-900/20'
+                                    : 'bg-white/5 hover:bg-white/10'
+                                } text-white font-medium transition-all hover:scale-105 active:scale-95`}
+                        >
+                            {option}
+                        </button>
+                    ))}
                 </div>
             </div>
         </div>
