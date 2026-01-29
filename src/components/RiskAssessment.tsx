@@ -32,7 +32,7 @@ const QUESTIONS: Question[] = [
         text: 'Är verksamheten beroende av att AI-funktionen fungerar korrekt i vardagen? (t.ex. centrala affärsflöden, riskbedömning, drift- eller beslutsstöd)',
         type: 'risk',
         category: 'Del 1: Risknivå',
-        answerOptions: ['Ja', 'Delvis', 'Nej', 'Vet inte']
+        answerOptions: ['Ja', 'Nej', 'Vet inte']
     },
     {
         id: 'q4',
@@ -47,35 +47,35 @@ const QUESTIONS: Question[] = [
         text: 'Finns ett tydligt ägarskap för AI-användning i organisationen? (t.ex. utsedd ansvarig på lednings- eller funktionsnivå)',
         type: 'maturity',
         category: 'Del 2: Organisatorisk beredskap',
-        answerOptions: ['Ja', 'Delvis', 'Nej']
+        answerOptions: ['Ja', 'Nej']
     },
     {
         id: 'm2',
         text: 'Har ni en samlad överblick över var AI används i verksamheten? (t.ex. i system, verktyg, processer eller via leverantörer)',
         type: 'maturity',
         category: 'Del 2: Organisatorisk beredskap',
-        answerOptions: ['Ja', 'Delvis', 'Nej']
+        answerOptions: ['Ja', 'Nej']
     },
     {
         id: 'm3',
         text: 'Finns gemensamma riktlinjer eller principer för hur AI får användas? (t.ex. vad som är tillåtet, vad som kräver beslut)',
         type: 'maturity',
         category: 'Del 2: Organisatorisk beredskap',
-        answerOptions: ['Ja', 'Delvis', 'Nej']
+        answerOptions: ['Ja', 'Nej']
     },
     {
         id: 'm4',
         text: 'Finns någon form av uppföljning, kontroll eller riskbedömning kopplad till AI-användning? (t.ex. vid införande, leverantörsbedömning eller löpande uppföljning)',
         type: 'maturity',
         category: 'Del 2: Organisatorisk beredskap',
-        answerOptions: ['Ja', 'Delvis', 'Nej', 'Vet inte']
+        answerOptions: ['Ja', 'Nej', 'Vet inte']
     },
     {
         id: 'm5',
         text: 'Skulle ni känna er trygga i att resonera kring hur ni tänkt kring AI, risk och ansvar internt? (t.ex. i ledningsgrupp eller styrelse)',
         type: 'maturity',
         category: 'Del 2: Organisatorisk beredskap',
-        answerOptions: ['Ja', 'Delvis', 'Nej']
+        answerOptions: ['Ja', 'Nej']
     },
 ];
 
