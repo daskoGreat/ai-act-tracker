@@ -164,7 +164,12 @@ export default function RiskAssessment() {
                     </div>
 
                     <a
-                        href="mailto:david.skoglund@greatit.se?subject=Jag%20har%20gjort%20EU%20AI%20Act%20Tracker&body=Jag%20vill%20g%C3%A4rna%20ha%20mer%20information."
+                        href={`mailto:david.skoglund@greatit.se?subject=EU AI Act Tracker - Analysresultat&body=${encodeURIComponent(
+                            `Hej! \n\nJag har gjort en skattning med EU AI Act Tracker och fick följande resultat:\n\n` +
+                            `Risknivå: ${result.riskLevel}\n` +
+                            `AI-mognad: ${result.maturityLevel}\n\n` +
+                            `Jag vill gärna prata mer om vad detta innebär för oss och hur vi kan gå vidare.`
+                        )}`}
                         className="inline-flex w-full md:w-auto min-h-[56px] items-center justify-center px-8 py-4 text-base font-medium text-black bg-white rounded-full hover:bg-gray-200 transition-colors duration-300 shadow-lg hover:shadow-xl mt-4"
                     >
                         Kontakta oss för mer information
