@@ -226,15 +226,15 @@ export default function RiskAssessment() {
                     {question.text}
                 </h3>
 
-                <div className="flex flex-col md:flex-row gap-4 w-full justify-center items-center">
+                <div className="flex flex-col md:flex-row gap-4 w-full justify-center items-center flex-wrap">
                     {question.answerOptions.map((option) => (
                         <button
                             key={option}
                             onClick={() => handleAnswer(option)}
-                            className={`px-8 py-4 w-full ${question.answerOptions.length === 3 ? 'md:w-32' : 'md:w-40'} min-h-[56px] rounded-xl border border-white/10 ${option === 'Ja'
+                            className={`px-6 py-4 w-full md:w-auto md:min-w-[160px] min-h-[56px] rounded-xl border border-white/10 ${option === 'Ja'
                                 ? 'bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-900/20'
                                 : 'bg-white/5 hover:bg-white/10'
-                                } text-white font-medium transition-all hover:scale-105 active:scale-95`}
+                                } text-white font-medium transition-all hover:scale-105 active:scale-95 whitespace-nowrap`}
                         >
                             {option}
                         </button>
