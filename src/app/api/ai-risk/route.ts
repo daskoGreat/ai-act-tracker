@@ -1,10 +1,18 @@
 import { NextResponse } from 'next/server';
 import { RiskRequest, CombinedResponse, RiskLevel, MaturityLevel } from '@/lib/types';
 
-export const maxDuration = 60; // Allow longer timeout for local LLM
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const GITHUB_MODEL = process.env.GITHUB_MODEL || 'openai/gpt-4.1';
 
 export async function POST(req: Request) {
     try {
+        if (!GITHUB_TOKEN) {
+            return NextResponse.json(
+                { error: 'GitHub Models token not configured' },
+                { status: 500 }
+            );
+        }
+
         const body: RiskRequest = await req.json();
         const { answers } = body;
 
@@ -32,13 +40,54 @@ export async function POST(req: Request) {
 
         return NextResponse.json(response);
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error in AI Risk API:', error);
+
+        // Handle specific error statuses from the upstream API
+        if (error.status === 401) {
+            return NextResponse.json({ error: 'GitHub Token is invalid' }, { status: 401 });
+        }
+        if (error.status === 403) {
+            return NextResponse.json({ error: 'GitHub Token does not have permission' }, { status: 403 });
+        }
+        if (error.status === 429) {
+            return NextResponse.json({ error: 'GitHub Models rate limit exceeded' }, { status: 429 });
+        }
+
         return NextResponse.json(
-            { error: 'Internal Server Error' },
+            { error: error.message || 'Internal Server Error' },
             { status: 500 }
         );
     }
+}
+
+async function callGitHubModel(systemPrompt: string, userPrompt: string) {
+    const response = await fetch('https://models.github.ai/inference/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/vnd.github+json',
+            'Authorization': `Bearer ${GITHUB_TOKEN}`,
+            'X-GitHub-Api-Version': '2022-11-28',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            model: GITHUB_MODEL,
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt }
+            ],
+            temperature: 0.0
+        })
+    });
+
+    if (!response.ok) {
+        const error: any = new Error(`GitHub Models API error: ${response.statusText}`);
+        error.status = response.status;
+        throw error;
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content;
 }
 
 async function classifyRisk(answers: { id: string; answer: string }[]): Promise<RiskLevel> {
@@ -64,30 +113,9 @@ Regler:
 
     const userPrompt = `Användarens svar:\n${answersText}`;
 
-    const payload = {
-        model: 'gemma3:4b',
-        prompt: `${systemPrompt}\n\n${userPrompt}`,
-        stream: false,
-        options: {
-            temperature: 0.0,
-        }
-    };
-
-    console.log('Sending risk classification request to Ollama');
-
-    const ollamaResponse = await fetch('http://127.0.0.1:11434/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
-
-    if (!ollamaResponse.ok) {
-        console.error('Ollama API error:', ollamaResponse.status, ollamaResponse.statusText);
-        throw new Error('Failed to connect to AI engine');
-    }
-
-    const data = await ollamaResponse.json();
-    let riskLevel = data.response.trim().replace(/\.$/, '');
+    console.log('Sending risk classification request to GitHub Models');
+    const content = await callGitHubModel(systemPrompt, userPrompt);
+    let riskLevel = content.trim().replace(/\.$/, '');
 
     const validLevels: RiskLevel[] = ["Oacceptabel risk", "Hög risk", "Begränsad risk", "Låg / minimal risk"];
     if (!validLevels.includes(riskLevel as RiskLevel)) {
@@ -120,30 +148,9 @@ Regler:
 
     const userPrompt = `Användarens svar:\n${answersText}`;
 
-    const payload = {
-        model: 'gemma3:4b',
-        prompt: `${systemPrompt}\n\n${userPrompt}`,
-        stream: false,
-        options: {
-            temperature: 0.0,
-        }
-    };
-
-    console.log('Sending maturity classification request to Ollama');
-
-    const ollamaResponse = await fetch('http://127.0.0.1:11434/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
-
-    if (!ollamaResponse.ok) {
-        console.error('Ollama API error:', ollamaResponse.status, ollamaResponse.statusText);
-        throw new Error('Failed to connect to AI engine');
-    }
-
-    const data = await ollamaResponse.json();
-    let maturityLevel = data.response.trim().replace(/\.$/, '');
+    console.log('Sending maturity classification request to GitHub Models');
+    const content = await callGitHubModel(systemPrompt, userPrompt);
+    let maturityLevel = content.trim().replace(/\.$/, '');
 
     const validLevels: MaturityLevel[] = ["Grundläggande", "Utvecklad", "Mogen", "Avancerad"];
     if (!validLevels.includes(maturityLevel as MaturityLevel)) {
