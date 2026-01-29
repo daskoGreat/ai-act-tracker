@@ -7,68 +7,74 @@ interface Question {
     id: string;
     text: string;
     type: QuestionType;
+    category: string;
     answerOptions: string[];
 }
 
 const QUESTIONS: Question[] = [
+    // DEL 1: Indikation på AI Act-risknivå
     {
         id: 'q1',
-        text: 'Avgör eller påverkar systemet människors tillgång till väsentliga tjänster, såsom utbildning, anställning, försäkringar eller hälso- och sjukvård?',
+        text: 'Påverkar AI hur individer bedöms, väljs eller prioriteras? (t.ex. rekrytering, urval, kundbedömning, tillgång till tjänster)',
         type: 'risk',
-        answerOptions: ['Ja', 'Nej']
-    },
-    {
-        id: 'm1',
-        text: 'Finns det ett tydligt utpekat ansvar (ägare) för de AI-system som används i verksamheten?',
-        type: 'maturity',
-        answerOptions: ['Ja', 'Delvis', 'Nej']
+        category: 'Del 1: Risknivå',
+        answerOptions: ['Ja', 'Nej', 'Vet inte']
     },
     {
         id: 'q2',
-        text: 'Fattar systemet automatiserade beslut som har juridisk påverkan eller liknande betydelsefull inverkan på enskilda individer?',
+        text: 'Kan AI-användningen få tydliga konsekvenser om något blir fel? (t.ex. felaktiga beslut om individer, regelbrott, affärspåverkan eller förtroendeskada)',
         type: 'risk',
-        answerOptions: ['Ja', 'Nej']
-    },
-    {
-        id: 'm2',
-        text: 'Har ni dokumentation som beskriver syfte, datakällor och leverantör för era AI-system?',
-        type: 'maturity',
-        answerOptions: ['Ja', 'Delvis', 'Nej']
+        category: 'Del 1: Risknivå',
+        answerOptions: ['Ja', 'I viss utsträckning', 'Nej']
     },
     {
         id: 'q3',
-        text: 'Behandlar systemet känsliga personuppgifter eller biometriska data som används för att identifiera eller kategorisera fysiska personer?',
+        text: 'Är verksamheten beroende av att AI-funktionen fungerar korrekt i vardagen? (t.ex. centrala affärsflöden, riskbedömning, drift- eller beslutsstöd)',
         type: 'risk',
-        answerOptions: ['Ja', 'Nej']
-    },
-    {
-        id: 'm3',
-        text: 'Genomför ni någon form av risk- eller konsekvensbedömning innan ett AI-system införs eller ändras?',
-        type: 'maturity',
-        answerOptions: ['Ja', 'Delvis', 'Nej']
+        category: 'Del 1: Risknivå',
+        answerOptions: ['Ja', 'Delvis', 'Nej', 'Vet inte']
     },
     {
         id: 'q4',
-        text: 'Används systemet för att övervaka, profilera eller förutsäga människors beteende, känslor eller avsikter?',
+        text: 'Hur används AI i beslutsprocessen?',
         type: 'risk',
-        answerOptions: ['Ja', 'Nej']
+        category: 'Del 1: Risknivå',
+        answerOptions: ['Stödjande', 'Del av beslutsunderlag', 'Direkt beslutande', 'Vet inte']
     },
+    // DEL 2: Organisatorisk beredskap
     {
-        id: 'm4',
-        text: 'Informerar ni användare, kunder eller medborgare om när och hur AI används i verksamheten?',
+        id: 'm1',
+        text: 'Finns ett tydligt ägarskap för AI-användning i organisationen? (t.ex. utsedd ansvarig på lednings- eller funktionsnivå)',
         type: 'maturity',
+        category: 'Del 2: Organisatorisk beredskap',
         answerOptions: ['Ja', 'Delvis', 'Nej']
     },
     {
-        id: 'q5',
-        text: 'Tillhör systemet något av de användningsområden som AI Act särskilt reglerar, till exempel social poängsättning, biometrisk fjärridentifiering eller kritisk infrastruktur?',
-        type: 'risk',
-        answerOptions: ['Ja', 'Nej']
+        id: 'm2',
+        text: 'Har ni en samlad överblick över var AI används i verksamheten? (t.ex. i system, verktyg, processer eller via leverantörer)',
+        type: 'maturity',
+        category: 'Del 2: Organisatorisk beredskap',
+        answerOptions: ['Ja', 'Delvis', 'Nej']
+    },
+    {
+        id: 'm3',
+        text: 'Finns gemensamma riktlinjer eller principer för hur AI får användas? (t.ex. vad som är tillåtet, vad som kräver beslut)',
+        type: 'maturity',
+        category: 'Del 2: Organisatorisk beredskap',
+        answerOptions: ['Ja', 'Delvis', 'Nej']
+    },
+    {
+        id: 'm4',
+        text: 'Finns någon form av uppföljning, kontroll eller riskbedömning kopplad till AI-användning? (t.ex. vid införande, leverantörsbedömning eller löpande uppföljning)',
+        type: 'maturity',
+        category: 'Del 2: Organisatorisk beredskap',
+        answerOptions: ['Ja', 'Delvis', 'Nej', 'Vet inte']
     },
     {
         id: 'm5',
-        text: 'Har ni rutiner för uppföljning, incidenthantering och möjlighet att pausa eller stänga av ett AI-system?',
+        text: 'Skulle ni känna er trygga i att resonera kring hur ni tänkt kring AI, risk och ansvar internt? (t.ex. i ledningsgrupp eller styrelse)',
         type: 'maturity',
+        category: 'Del 2: Organisatorisk beredskap',
         answerOptions: ['Ja', 'Delvis', 'Nej']
     },
 ];
@@ -208,6 +214,9 @@ export default function RiskAssessment() {
             </div>
 
             <div className="min-h-[300px] flex flex-col items-center justify-center animate-in slide-in-from-right-8 duration-500 key={currentStep}">
+                <p className="text-blue-400 font-semibold uppercase tracking-wider text-sm mb-2">
+                    {question.category}
+                </p>
                 <h3 className="text-2xl md:text-3xl font-medium text-center leading-relaxed mb-8 md:mb-12 text-gray-100">
                     {question.text}
                 </h3>
