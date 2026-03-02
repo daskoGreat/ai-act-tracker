@@ -1,0 +1,16 @@
+*.js.map
+*.ts
+.vscode
+.gitignore
+node_modules
+obj
+bin
+scripts
+src
+package.json
+package-lock.json
+tsconfig.json
+next.config.ts
+tailwind.config.ts
+public
+.next
