@@ -1,18 +1,9 @@
 import { NextResponse } from 'next/server';
 import { RiskRequest, CombinedResponse, RiskLevel, MaturityLevel } from '@/lib/types';
-
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const GITHUB_MODEL = process.env.GITHUB_MODEL || 'openai/gpt-4.1';
+import { getLLMProvider } from '@/llm';
 
 export async function POST(req: Request) {
     try {
-        if (!GITHUB_TOKEN) {
-            return NextResponse.json(
-                { error: 'GitHub Models token not configured' },
-                { status: 500 }
-            );
-        }
-
         const body: RiskRequest = await req.json();
         const { answers } = body;
 
@@ -23,15 +14,17 @@ export async function POST(req: Request) {
             );
         }
 
+        const llm = getLLMProvider();
+
         // Filter answers by type
         const riskAnswers = answers.filter(a => a.type === 'risk');
         const maturityAnswers = answers.filter(a => a.type === 'maturity');
 
         // Get risk classification
-        const riskLevel = await classifyRisk(riskAnswers);
+        const riskLevel = await classifyRisk(llm, riskAnswers);
 
         // Get maturity classification
-        const maturityLevel = await classifyMaturity(maturityAnswers);
+        const maturityLevel = await classifyMaturity(llm, maturityAnswers);
 
         const response: CombinedResponse = {
             riskLevel,
@@ -45,13 +38,13 @@ export async function POST(req: Request) {
 
         // Handle specific error statuses from the upstream API
         if (error.status === 401) {
-            return NextResponse.json({ error: 'GitHub Token is invalid' }, { status: 401 });
+            return NextResponse.json({ error: 'LLM Token is invalid' }, { status: 401 });
         }
         if (error.status === 403) {
-            return NextResponse.json({ error: 'GitHub Token does not have permission' }, { status: 403 });
+            return NextResponse.json({ error: 'LLM Token does not have permission' }, { status: 403 });
         }
         if (error.status === 429) {
-            return NextResponse.json({ error: 'GitHub Models rate limit exceeded' }, { status: 429 });
+            return NextResponse.json({ error: 'LLM rate limit exceeded' }, { status: 429 });
         }
 
         return NextResponse.json(
@@ -61,36 +54,7 @@ export async function POST(req: Request) {
     }
 }
 
-async function callGitHubModel(systemPrompt: string, userPrompt: string) {
-    const response = await fetch('https://models.github.ai/inference/chat/completions', {
-        method: 'POST',
-        headers: {
-            'Accept': 'application/vnd.github+json',
-            'Authorization': `Bearer ${GITHUB_TOKEN}`,
-            'X-GitHub-Api-Version': '2022-11-28',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            model: GITHUB_MODEL,
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userPrompt }
-            ],
-            temperature: 0.0
-        })
-    });
-
-    if (!response.ok) {
-        const error: any = new Error(`GitHub Models API error: ${response.statusText}`);
-        error.status = response.status;
-        throw error;
-    }
-
-    const data = await response.json();
-    return data.choices[0].message.content;
-}
-
-async function classifyRisk(answers: { id: string; answer: string }[]): Promise<RiskLevel> {
+async function classifyRisk(llm: any, answers: { id: string; answer: string }[]): Promise<RiskLevel> {
     const answersText = answers
         .map((a) => `- Fråga ID: ${a.id}\n  Svar: ${a.answer}`)
         .join('\n');
@@ -113,8 +77,8 @@ Regler:
 
     const userPrompt = `Användarens svar:\n${answersText}`;
 
-    console.log('Sending risk classification request to GitHub Models');
-    const content = await callGitHubModel(systemPrompt, userPrompt);
+    console.log('Sending risk classification request to LLM');
+    const content = await llm.generateAnswer(systemPrompt, userPrompt);
     let riskLevel = content.trim().replace(/\.$/, '');
 
     const validLevels: RiskLevel[] = ["Oacceptabel risk", "Hög risk", "Begränsad risk", "Låg / minimal risk"];
@@ -125,7 +89,7 @@ Regler:
     return riskLevel as RiskLevel;
 }
 
-async function classifyMaturity(answers: { id: string; answer: string }[]): Promise<MaturityLevel> {
+async function classifyMaturity(llm: any, answers: { id: string; answer: string }[]): Promise<MaturityLevel> {
     const answersText = answers
         .map((a) => `- Fråga ID: ${a.id}\n  Svar: ${a.answer}`)
         .join('\n');
@@ -148,8 +112,8 @@ Regler:
 
     const userPrompt = `Användarens svar:\n${answersText}`;
 
-    console.log('Sending maturity classification request to GitHub Models');
-    const content = await callGitHubModel(systemPrompt, userPrompt);
+    console.log('Sending maturity classification request to LLM');
+    const content = await llm.generateAnswer(systemPrompt, userPrompt);
     let maturityLevel = content.trim().replace(/\.$/, '');
 
     const validLevels: MaturityLevel[] = ["Grundläggande", "Utvecklad", "Mogen", "Avancerad"];
@@ -159,3 +123,4 @@ Regler:
 
     return maturityLevel as MaturityLevel;
 }
+
