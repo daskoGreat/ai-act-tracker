@@ -41,14 +41,27 @@ export default function RiskAssessment() {
         setLoading(true);
         setError(null);
         try {
-            const payload: RiskRequest = {
-                answers: finalAnswers
-            };
+            // Construct a prompt from answers
+            const riskAnswers = finalAnswers.filter(a => a.type === 'risk');
+            const maturityAnswers = finalAnswers.filter(a => a.type === 'maturity');
 
-            const res = await fetch('/api/ai-risk', {
+            const prompt = `Analysera följande svar för EU AI Act:
+            
+            RISKFRÅGOR:
+            ${riskAnswers.map(a => `- ${a.id}: ${a.answer}`).join('\n')}
+            
+            MOGNADFRÅGOR:
+            ${maturityAnswers.map(a => `- ${a.id}: ${a.answer}`).join('\n')}
+            
+            Svara med en sammanfattning som innehåller:
+            1. Risknivå (Oacceptabel, Hög, Begränsad, Låg)
+            2. Mognadsnivå (Grundläggande, Utvecklad, Mogen, Avancerad)
+            3. En kort förklaring.`;
+
+            const res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
+                body: JSON.stringify({ prompt }),
             });
 
             if (!res.ok) {
@@ -56,14 +69,24 @@ export default function RiskAssessment() {
                 throw new Error(errorData.error || 'Något gick fel vid analysen. Kontrollera loggarna.');
             }
 
-            const data: CombinedResponse = await res.json();
-            setResult(data);
+            const textResult = await res.text();
+
+            // To maintain compatibility with the existing UI, we'll try to parse or just show the text
+            // The existing UI expects { riskLevel, maturityLevel }. 
+            // We'll update the result state to handle a string or adapt it.
+            // For now, let's adapt the UI to show the text result.
+            setResult({
+                riskLevel: "Se analys nedan" as any,
+                maturityLevel: "Se analys nedan" as any,
+                analysisText: textResult
+            } as any);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Ett okänt fel inträffade');
         } finally {
             setLoading(false);
         }
     };
+
 
     const reset = () => {
         setCurrentStep(0);
@@ -85,26 +108,22 @@ export default function RiskAssessment() {
         return (
             <div className="w-full mx-auto flex flex-col items-center justify-center space-y-8 animate-in zoom-in-95 duration-500 max-w-2xl text-center px-4 md:px-0">
                 <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-                    Resultat
+                    Analysresultat
                 </h2>
-                <div className="p-6 md:p-8 border border-white/10 bg-white/5 rounded-2xl backdrop-blur-sm w-full space-y-6">
-                    <div>
-                        <p className="text-gray-400 mb-2 uppercase tracking-widest text-xs md:text-sm">Risknivå enligt AI Act</p>
-                        <p className="text-3xl md:text-4xl font-semibold text-white">{result.riskLevel}</p>
+                <div className="p-6 md:p-8 border border-white/10 bg-white/5 rounded-2xl backdrop-blur-sm w-full space-y-6 text-left">
+                    <div className="prose prose-invert max-w-none">
+                        <p className="text-gray-400 mb-4 uppercase tracking-widest text-xs md:text-sm">AI Act Analys</p>
+                        <div className="text-white whitespace-pre-wrap leading-relaxed">
+                            {(result as any).analysisText || "Ingen analys tillgänglig."}
+                        </div>
                     </div>
 
-                    <div className="h-px bg-white/10"></div>
-
-                    <div>
-                        <p className="text-gray-400 mb-2 uppercase tracking-widest text-xs md:text-sm">AI Act-mognad</p>
-                        <p className="text-3xl md:text-4xl font-semibold text-white">{result.maturityLevel}</p>
-                    </div>
+                    <div className="h-px bg-white/10 my-6"></div>
 
                     <a
                         href={`mailto:david.skoglund@greatit.se?subject=EU AI Act Tracker - Analysresultat&body=${encodeURIComponent(
-                            `Hej! \n\nJag har gjort en skattning med EU AI Act Tracker och fick följande resultat:\n\n` +
-                            `Risknivå: ${result.riskLevel}\n` +
-                            `AI-mognad: ${result.maturityLevel}\n\n` +
+                            `Hej! \n\nJag har gjort en skattning med EU AI Act Tracker och fick följande analys:\n\n` +
+                            `${(result as any).analysisText}\n\n` +
                             `Jag vill gärna prata mer om vad detta innebär för oss och hur vi kan gå vidare.`
                         )}`}
                         className="inline-flex w-full md:w-auto min-h-[56px] items-center justify-center px-8 py-4 text-base font-medium text-black bg-white rounded-full hover:bg-gray-200 transition-colors duration-300 shadow-lg hover:shadow-xl mt-4"
@@ -112,6 +131,7 @@ export default function RiskAssessment() {
                         Kontakta oss för mer information
                     </a>
                 </div>
+
                 <button
                     onClick={reset}
                     className="text-gray-500 hover:text-white transition-colors p-4 min-h-[44px]"
@@ -183,14 +203,14 @@ export default function RiskAssessment() {
                             key={option.value}
                             onClick={() => handleAnswer(option.value, option.label)}
                             className={`group relative flex items-start gap-4 p-5 md:p-6 text-left rounded-2xl border transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-blue-500/50 ${(currentStep === 0 && option.value === 'yes_decision')
-                                    ? 'bg-blue-600/10 border-blue-500/40 hover:bg-blue-600/20'
-                                    : 'bg-white/[0.02] border-white/10 hover:bg-white/5 hover:border-white/20'
+                                ? 'bg-blue-600/10 border-blue-500/40 hover:bg-blue-600/20'
+                                : 'bg-white/[0.02] border-white/10 hover:bg-white/5 hover:border-white/20'
                                 }`}
                         >
                             {/* Radio Indicator */}
                             <div className={`mt-1 flex-shrink-0 w-6 h-6 rounded-full border-2 transition-colors duration-300 flex items-center justify-center ${(currentStep === 0 && option.value === 'yes_decision')
-                                    ? 'border-blue-500'
-                                    : 'border-gray-600 group-hover:border-gray-400'
+                                ? 'border-blue-500'
+                                : 'border-gray-600 group-hover:border-gray-400'
                                 }`}>
                                 <div className={`w-3 h-3 rounded-full bg-blue-500 transition-transform duration-300 scale-0 group-active:scale-100 ${(currentStep === 0 && option.value === 'yes_decision') ? 'scale-100' : ''
                                     }`} />
