@@ -42,7 +42,7 @@ export async function POST(req: Request) {
         }
 
         const baseUrl = endpoint!.replace(/\/$/, '');
-        const url = `${baseUrl}/openai/deployments/${deployment}/chat/completions?api-version=2024-02-15-preview`;
+        const url = `${baseUrl}/openai/deployments/${deployment}/chat/completions?api-version=2024-08-01-preview`;
 
         const response = await fetch(url, {
             method: 'POST',
