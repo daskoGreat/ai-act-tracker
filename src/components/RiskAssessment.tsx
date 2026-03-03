@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { RiskRequest, CombinedResponse, QuestionType } from '@/lib/types';
+import { CombinedResponse, QuestionType } from '@/lib/types';
 import { survey } from '@/config/questions';
+import AnalysisSummaryCard from './AnalysisSummaryCard';
 
 export default function RiskAssessment() {
     const [currentStep, setCurrentStep] = useState(0);
@@ -41,7 +42,6 @@ export default function RiskAssessment() {
         setLoading(true);
         setError(null);
         try {
-            // Construct a prompt from answers
             const riskAnswers = finalAnswers.filter(a => a.type === 'risk');
             const maturityAnswers = finalAnswers.filter(a => a.type === 'maturity');
 
@@ -53,10 +53,7 @@ export default function RiskAssessment() {
             MOGNADFRÅGOR:
             ${maturityAnswers.map(a => `- ${a.id}: ${a.answer}`).join('\n')}
             
-            Svara med en sammanfattning som innehåller:
-            1. Risknivå (Oacceptabel, Hög, Begränsad, Låg)
-            2. Mognadsnivå (Grundläggande, Utvecklad, Mogen, Avancerad)
-            3. En kort förklaring.`;
+            Svara med en sammanfattning som innehåller risknivå, mognadsnivå och en förklaring.`;
 
             const res = await fetch('/api/chat', {
                 method: 'POST',
@@ -69,18 +66,22 @@ export default function RiskAssessment() {
                 throw new Error(errorData.error || 'Något gick fel vid analysen. Kontrollera loggarna.');
             }
 
-            const textResult = await res.text();
+            const data = await res.json();
 
-            // To maintain compatibility with the existing UI, we'll try to parse or just show the text
-            // The existing UI expects { riskLevel, maturityLevel }. 
-            // We'll update the result state to handle a string or adapt it.
-            // For now, let's adapt the UI to show the text result.
+            // Fallback logic
+            const analysisResult = {
+                riskLevel: data.riskLevel || "Begränsad risk",
+                maturityLevel: data.maturityLevel || "Grundläggande",
+                explanation: data.explanation || ""
+            };
+
             setResult({
-                riskLevel: "Se analys nedan" as any,
-                maturityLevel: "Se analys nedan" as any,
-                analysisText: textResult
-            } as any);
+                riskLevel: analysisResult.riskLevel,
+                maturityLevel: analysisResult.maturityLevel,
+                analysis: analysisResult
+            });
         } catch (err) {
+            console.error("Analysis error:", err);
             setError(err instanceof Error ? err.message : 'Ett okänt fel inträffade');
         } finally {
             setLoading(false);
@@ -104,41 +105,12 @@ export default function RiskAssessment() {
         );
     }
 
-    if (result) {
+    if (result && result.analysis) {
         return (
-            <div className="w-full mx-auto flex flex-col items-center justify-center space-y-8 animate-in zoom-in-95 duration-500 max-w-2xl text-center px-4 md:px-0">
-                <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-                    Analysresultat
-                </h2>
-                <div className="p-6 md:p-8 border border-white/10 bg-white/5 rounded-2xl backdrop-blur-sm w-full space-y-6 text-left">
-                    <div className="prose prose-invert max-w-none">
-                        <p className="text-gray-400 mb-4 uppercase tracking-widest text-xs md:text-sm">AI Act Analys</p>
-                        <div className="text-white whitespace-pre-wrap leading-relaxed">
-                            {(result as any).analysisText || "Ingen analys tillgänglig."}
-                        </div>
-                    </div>
-
-                    <div className="h-px bg-white/10 my-6"></div>
-
-                    <a
-                        href={`mailto:david.skoglund@greatit.se?subject=EU AI Act Tracker - Analysresultat&body=${encodeURIComponent(
-                            `Hej! \n\nJag har gjort en skattning med EU AI Act Tracker och fick följande analys:\n\n` +
-                            `${(result as any).analysisText}\n\n` +
-                            `Jag vill gärna prata mer om vad detta innebär för oss och hur vi kan gå vidare.`
-                        )}`}
-                        className="inline-flex w-full md:w-auto min-h-[56px] items-center justify-center px-8 py-4 text-base font-medium text-black bg-white rounded-full hover:bg-gray-200 transition-colors duration-300 shadow-lg hover:shadow-xl mt-4"
-                    >
-                        Kontakta oss för mer information
-                    </a>
-                </div>
-
-                <button
-                    onClick={reset}
-                    className="text-gray-500 hover:text-white transition-colors p-4 min-h-[44px]"
-                >
-                    Gör en ny analys
-                </button>
-            </div>
+            <AnalysisSummaryCard
+                result={result.analysis}
+                onReset={reset}
+            />
         );
     }
 

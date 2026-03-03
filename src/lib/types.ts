@@ -32,8 +32,15 @@ export interface MaturityResponse {
     error?: string;
 }
 
+export interface AnalysisResult {
+    riskLevel: string;
+    maturityLevel: string;
+    explanation: string;
+}
+
 export interface CombinedResponse {
-    riskLevel: RiskLevel;
-    maturityLevel: MaturityLevel;
+    riskLevel: RiskLevel | string;
+    maturityLevel: MaturityLevel | string;
+    analysis?: AnalysisResult;
     error?: string;
 }

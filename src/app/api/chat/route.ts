@@ -41,6 +41,18 @@ export async function POST(req: Request) {
             );
         }
 
+        const systemPrompt = `Du är en expert på EU AI Act. 
+Analysera inskickade svar och returnera ALLTID ett strikt JSON-objekt enligt detta format:
+{
+  "riskLevel": "string",
+  "maturityLevel": "string",
+  "explanation": "string"
+}
+
+Värden för riskLevel: "Oacceptabel risk", "Hög risk", "Begränsad risk", "Låg / minimal risk".
+Värden för maturityLevel: "Grundläggande", "Utvecklad", "Mogen", "Avancerad".
+explanation ska vara en kort, professionell sammanfattning på svenska.`;
+
         const baseUrl = endpoint!.replace(/\/$/, '');
         const url = `${baseUrl}/openai/deployments/${deployment}/chat/completions?api-version=2024-08-01-preview`;
 
@@ -51,8 +63,12 @@ export async function POST(req: Request) {
                 'api-key': apiKey!
             },
             body: JSON.stringify({
-                messages: messages || [{ role: 'user', content: prompt }],
-                temperature: 0.0
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    ...(messages || [{ role: 'user', content: prompt }])
+                ],
+                temperature: 0.0,
+                response_format: { type: "json_object" }
             })
         });
 
@@ -62,12 +78,9 @@ export async function POST(req: Request) {
         }
 
         const data = await response.json();
-        const resultText = data.choices[0].message.content;
+        const content = data.choices[0].message.content;
 
-        return new Response(resultText, {
-            status: 200,
-            headers: { 'Content-Type': 'text/plain; charset=utf-8' }
-        });
+        return NextResponse.json(JSON.parse(content));
 
     } catch (error: any) {
         console.error('Error in api/chat:', error);
