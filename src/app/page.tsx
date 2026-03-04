@@ -14,10 +14,6 @@ export default function Home() {
             <div className="z-20 w-full pt-20">
                 <RiskAssessment />
             </div>
-
-            <div className="z-20 w-full pt-20">
-                <RiskAssessment />
-            </div>
         </main>
     );
 }
