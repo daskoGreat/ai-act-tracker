@@ -198,12 +198,12 @@ export default function RiskAssessment() {
             </div>
 
             {/* Subtle Footer Note */}
-            <div className="mt-8 text-center space-y-2 opacity-50">
-                <p className="text-gray-600 text-[10px] md:text-xs uppercase tracking-widest font-medium">
-                    EU AI Act Tracker &copy; {new Date().getFullYear()}
+            <div className="mt-16 text-center space-y-3 opacity-40">
+                <p className="text-white text-[10px] md:text-[11px] uppercase tracking-[0.3em] font-medium">
+                    EU AI ACT TRACKER &copy; {new Date().getFullYear()}
                 </p>
-                <p className="text-[10px] md:text-xs font-semibold tracking-[0.2em] uppercase">
-                    Powered by <span style={{ color: '#BAAA5D' }}>Great IT</span>
+                <p className="text-[10px] md:text-[11px] font-semibold tracking-[0.2em] uppercase text-white">
+                    POWERED BY <span style={{ color: '#BAAA5D' }}>GREAT IT</span>
                 </p>
             </div>
         </div>
