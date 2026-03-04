@@ -67,6 +67,16 @@ export default function AnalysisSummaryCard({ result, onReset }: AnalysisSummary
             >
                 Gör en ny analys
             </button>
+
+            {/* Subtle Footer Note */}
+            <div className="mt-8 text-center space-y-2 opacity-50">
+                <p className="text-gray-600 text-[10px] md:text-xs uppercase tracking-widest font-medium">
+                    EU AI Act Tracker &copy; {new Date().getFullYear()}
+                </p>
+                <p className="text-[10px] md:text-xs font-semibold tracking-[0.2em] uppercase">
+                    Powered by <span style={{ color: '#BAAA5D' }}>Great IT</span>
+                </p>
+            </div>
         </div>
     );
 }
