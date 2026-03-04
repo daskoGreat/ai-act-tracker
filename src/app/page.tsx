@@ -15,13 +15,9 @@ export default function Home() {
                 <RiskAssessment />
             </div>
 
-            <footer className="absolute bottom-6 flex flex-col items-center gap-2 text-center text-white/30 text-xs font-light">
-                <p>Detta är ett snabbt riskfilter, inte juridisk rådgivning.</p>
-                <div className="flex items-center gap-1.5 mt-1">
-                    <span>Powered by</span>
-                    <span className="font-semibold text-white/50 tracking-wide uppercase">Great IT</span>
-                </div>
-            </footer>
+            <div className="z-20 w-full pt-20">
+                <RiskAssessment />
+            </div>
         </main>
     );
 }
