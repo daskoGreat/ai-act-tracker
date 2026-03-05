@@ -8,7 +8,7 @@ interface AnalysisSummaryCardProps {
 }
 
 export default function AnalysisSummaryCard({ result, onReset }: AnalysisSummaryCardProps) {
-    const mailtoLink = `mailto:david.skoglund@greatit.se?subject=EU AI Act Tracker - Analysresultat&body=${encodeURIComponent(
+    const mailtoLink = `mailto:event@greatit.se?subject=EU AI Act Tracker - Analysresultat&body=${encodeURIComponent(
         `Hej! \n\nJag har gjort en skattning med EU AI Act Tracker och fick följande resultat:\n\n` +
         `Risknivå: ${result.riskLevel}\n` +
         `AI-mognad: ${result.maturityLevel}\n\n` +
