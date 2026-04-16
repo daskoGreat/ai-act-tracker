@@ -52,7 +52,7 @@ export default function AnalysisSummaryCard({ result, onReset }: AnalysisSummary
                             href={mailtoLink}
                             className="inline-flex h-[48px] items-center justify-center px-10 text-base font-semibold text-[#0B1224] bg-white rounded-full hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-white/10 hover:-translate-y-0.5 active:scale-[0.98]"
                         >
-                            Kontakta Great IT
+                            Kontakta LogikFabriken
                         </a>
                     </div>
                 </div>
@@ -71,7 +71,7 @@ export default function AnalysisSummaryCard({ result, onReset }: AnalysisSummary
                     EU AI ACT TRACKER &copy; {new Date().getFullYear()}
                 </p>
                 <p className="text-[10px] md:text-[11px] font-semibold tracking-[0.2em] uppercase text-white">
-                    POWERED BY <span style={{ color: '#BAAA5D' }}>GREAT IT</span>
+                    POWERED BY <span style={{ color: '#BAAA5D' }}>LOGIKFABRIKEN</span>
                 </p>
             </div>
         </div>
