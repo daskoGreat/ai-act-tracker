@@ -4,29 +4,23 @@ export async function POST(req: Request) {
     try {
         // Debug logs
         console.log("Provider:", process.env.LLM_PROVIDER);
-        console.log("Deployment:", process.env.AZURE_OPENAI_DEPLOYMENT);
+        console.log("Model:", process.env.GITHUB_MODEL || "gpt-4o-mini");
 
         const provider = process.env.LLM_PROVIDER;
-        const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
-        const apiKey = process.env.AZURE_OPENAI_API_KEY;
-        const deployment = process.env.AZURE_OPENAI_DEPLOYMENT;
+        const token = process.env.GITHUB_TOKEN;
+        const model = process.env.GITHUB_MODEL || "gpt-4o-mini";
 
-        // Strict validation
-        if (provider !== "azure") {
+        // Optional validation
+        if (provider && provider !== "github") {
             return NextResponse.json(
-                { error: "LLM_PROVIDER must be 'azure'. GitHub Models is no longer supported." },
+                { error: "LLM_PROVIDER should be 'github'." },
                 { status: 400 }
             );
         }
 
-        const missingVars = [];
-        if (!endpoint) missingVars.push("AZURE_OPENAI_ENDPOINT");
-        if (!apiKey) missingVars.push("AZURE_OPENAI_API_KEY");
-        if (!deployment) missingVars.push("AZURE_OPENAI_DEPLOYMENT");
-
-        if (missingVars.length > 0) {
+        if (!token) {
             return NextResponse.json(
-                { error: `Missing Azure environment variables: ${missingVars.join(", ")}` },
+                { error: "Missing GitHub Models credentials: GITHUB_TOKEN" },
                 { status: 500 }
             );
         }
@@ -53,16 +47,16 @@ Värden för riskLevel: "Oacceptabel risk", "Hög risk", "Begränsad risk", "Lå
 Värden för maturityLevel: "Grundläggande", "Utvecklad", "Mogen", "Avancerad".
 explanation ska vara en kort, professionell sammanfattning på svenska.`;
 
-        const baseUrl = endpoint!.replace(/\/$/, '');
-        const url = `${baseUrl}/openai/deployments/${deployment}/chat/completions?api-version=2024-08-01-preview`;
+        const url = "https://models.inference.ai.azure.com/chat/completions";
 
         const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'api-key': apiKey!
+                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
+                model: model,
                 messages: [
                     { role: 'system', content: systemPrompt },
                     ...(messages || [{ role: 'user', content: prompt }])
@@ -74,7 +68,7 @@ explanation ska vara en kort, professionell sammanfattning på svenska.`;
 
         if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`Azure OpenAI API error: ${response.statusText} - ${errorText}`);
+            throw new Error(`GitHub Models API error: ${response.statusText} - ${errorText}`);
         }
 
         const data = await response.json();
