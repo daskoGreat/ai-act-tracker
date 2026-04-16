@@ -203,7 +203,7 @@ export default function RiskAssessment() {
                     EU AI ACT TRACKER &copy; {new Date().getFullYear()}
                 </p>
                 <p className="text-[10px] md:text-[11px] font-semibold tracking-[0.2em] uppercase text-white">
-                    POWERED BY <span style={{ color: '#BAAA5D' }}>GREAT IT</span>
+                    POWERED BY <span style={{ color: '#BAAA5D' }}>DS</span>
                 </p>
             </div>
         </div>
