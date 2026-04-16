@@ -52,7 +52,7 @@ export default function AnalysisSummaryCard({ result, onReset }: AnalysisSummary
                             href={mailtoLink}
                             className="inline-flex h-[48px] items-center justify-center px-10 text-base font-semibold text-[#0B1224] bg-white rounded-full hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-white/10 hover:-translate-y-0.5 active:scale-[0.98]"
                         >
-                            Kontakta LogikFabriken
+                            Kontakta LOGIKFABRIKEN
                         </a>
                     </div>
                 </div>
