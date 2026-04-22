@@ -1,0 +1,10 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ai-act-tracker
+  annotations:
+    github.com/project-slug: daskoGreat/ai-act-tracker
+spec:
+  type: other
+  lifecycle: unknown
+  owner: davidgreat
